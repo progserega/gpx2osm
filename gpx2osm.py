@@ -177,8 +177,8 @@ def get_all_nearest_points(lat, lon, poi, max_dist):
     result.append(ids_list[dist])
   return result
 
-def write_osm(poi,ways):
-  xml = OSMWriter("out.osm")
+def write_osm(out_file_name,poi,ways):
+  xml = OSMWriter(out_file_name)
   for node_id in poi:
     node=poi[node_id]
     xml.node(node_id, node["lat"] , node["lon"], {"power": "pole", "source":"survey","note":"сконвертировано с помощью gpx2osm", "voltage":"400", "ref":node["name"]}, version=1)
@@ -191,8 +191,9 @@ def write_osm(poi,ways):
 # main:
 #print(get_prefery_begin("2/21а4"))
 #sys.exit(0)
-
-poi=get_poi(sys.argv[1])
+in_file_name=sys.argv[1]
+out_file_name=in_file_name+".osm"
+poi=get_poi(in_file_name)
 
 ways={}
 way_id=1
@@ -270,6 +271,6 @@ for poi_id in poi:
         # перескакиваем на добавленную точку:
         last_point=candidat
 
-write_osm(poi,ways)
+write_osm(out_file_name,poi,ways)
         
         
