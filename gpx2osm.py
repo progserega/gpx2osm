@@ -14,16 +14,16 @@ def get_next_candidat(poi,last_point,list_newarest_points,cur_name):
   prefer_next_name=get_prefery_next_ref(cur_name,1)
   prefer_prev_name=get_prefery_next_ref(cur_name,-1)
   
-  print("предполагаемые следующие имена: '%s' и '%s'"%(prefer_next_name,prefer_prev_name))
-  print("Ближайшие точки к poi c именем '%s' по расстоянию:"%cur_name)
+# print("предполагаемые следующие имена: '%s' и '%s'"%(prefer_next_name,prefer_prev_name))
+# print("Ближайшие точки к poi c именем '%s' по расстоянию:"%cur_name)
            
   candidat=None
   for poi_id in list_newarest_points:
-    print("%s"%poi[poi_id]["name"])
+#    print("%s"%poi[poi_id]["name"])
     if poi[poi_id]["name"]==prefer_next_name or poi[poi_id]["name"]==prefer_prev_name:
       # ищем ближайшую опору с предполагаемым именем:
       candidat=poi[poi_id]
-      print("нашли ближайшую подходящую по имени с ref=%s"%candidat["name"])
+#      print("нашли ближайшую подходящую по имени с ref=%s"%candidat["name"])
       break;
   #if candidat==None:
     # просто берём ближайшую точку:
@@ -36,25 +36,25 @@ def get_next_candidat(poi,last_point,list_newarest_points,cur_name):
 def get_begin_candidat(poi,last_point,list_all_newarest_points,cur_name):
   begin_ref=get_prefery_begin(cur_name)
   if begin_ref==None:
-    print("не смог вычислить начальное имя для '%s' - пропуск"%cur_name)
+#    print("не смог вычислить начальное имя для '%s' - пропуск"%cur_name)
     return None
     
-  print("предполагаем следующее имя начала: '%s'"%begin_ref)
+#  print("предполагаем следующее имя начала: '%s'"%begin_ref)
   
-  print("Ближайшие точки к poi c именем '%s' по расстоянию:"%cur_name)
+#  print("Ближайшие точки к poi c именем '%s' по расстоянию:"%cur_name)
            
   candidat=None
   for poi_id in list_all_newarest_points:
-    print("%s"%poi[poi_id]["name"])
+#    print("%s"%poi[poi_id]["name"])
     if poi[poi_id]["name"]==begin_ref:
       # ищем ближайшую опору с предполагаемым именем:
       candidat=poi[poi_id]
-      print("нашли ближайшую подходящую по имени с ref=%s"%candidat["name"])
+#      print("нашли ближайшую подходящую по имени с ref=%s"%candidat["name"])
       break;
-  if candidat==None:
-    print("по имени не нашли - пропуск")
-  else:
-    print("candidat ref=%s"%candidat["name"])
+#  if candidat==None:
+#    print("по имени не нашли - пропуск")
+#  else:
+#    print("candidat ref=%s"%candidat["name"])
   return candidat
 
 
@@ -87,18 +87,22 @@ def get_poi(filename):
 def get_prefery_begin(ref):
   index_is_digit=True
   result_ref=None
+  ref_index=0
+  razryad=0
   s=ref[len(ref)-1]
   if s.isdigit():
     index_is_digit=True
   else:
     index_is_digit=False
-  print("index_is_digit=",index_is_digit)
+#  print("index_is_digit=",index_is_digit)
 
   for index in range(len(ref)-1,-1,-1):
     s=ref[index]
-    print("index=%d"%index)
-    print("s=%s"%ref[index])
+#    print("index=%d"%index)
+#    print("s=%s"%ref[index])
     if s.isdigit() and index_is_digit:
+      ref_index=ref_index+pow(10,razryad)*int(s)
+      razryad+=1
       continue
     elif not s.isdigit() and not index_is_digit: 
       continue 
@@ -108,7 +112,10 @@ def get_prefery_begin(ref):
     else:
       result_ref=ref[0:index+1]
       break
-  print("result_ref=%s"%result_ref)
+  if ref_index!=1 and index_is_digit:
+    # значит это конец отпайки и его не надо соединять с началом линии:
+    result_ref=None
+#  print("result_ref=%s"%result_ref)
   return result_ref
 
 def get_prefery_next_ref(ref,inc):
@@ -197,35 +204,32 @@ poi=get_poi(in_file_name)
 
 ways={}
 way_id=1
-print("len(poi)=%d"%len(poi))
+#print("len(poi)=%d"%len(poi))
 for poi_id in poi:
   item=poi[poi_id]
   last_point=item
   first_point=item
   processed_flow=1
 
-  print("process poi_d=%s"%poi_id)
-  print("process poi ref=%s"%item["name"])
+#  print("process poi_d=%s"%poi_id)
+#  print("process poi ref=%s"%item["name"])
 
   # первая точка в линии:
   if "way_id" not in item:
-    print("1")
     # если точку ещё не добавляли в линию:
     if way_id not in ways:
-      print("2")
       ways[way_id]=[]
     item["way_id"]=way_id
     ways[way_id].append(poi_id)
 
     while True:
-      print("3")
       end_line=False
       dist=0
       # следующие точки в линии:
       cur_name=last_point["name"]
-      print("=========  Ищем ближайшие точки для: '%s'"%cur_name)
+#      print("=========  Ищем ближайшие точки для: '%s'"%cur_name)
       list_newarest_points=get_nearest_points(last_point["lat"], last_point["lon"],poi,MAX_DIST)
-      print("len(list_newarest_points)=%d"%len(list_newarest_points))
+#      print("len(list_newarest_points)=%d"%len(list_newarest_points))
 
       if len(list_newarest_points)==0:
         # будем заканчивать линию:
@@ -239,7 +243,7 @@ for poi_id in poi:
 
       if dist>MAX_DIST or end_line==True:
         # пробуем прикрепить к началу (к части другой линии):
-        print("пробуем прикрепить к началу:")
+#        print("пробуем прикрепить к началу:")
         list_all_newarest_points=get_all_nearest_points(last_point["lat"], last_point["lon"],poi,MAX_DIST)
         candidat=get_begin_candidat(poi,last_point,list_all_newarest_points,cur_name)
         if candidat!=None:
@@ -260,7 +264,7 @@ for poi_id in poi:
           break
       else:
         # добавляем точку в линию:
-        print("добавляем точку с ref='%s' как следующую для точки с ref='%s'"%(candidat["name"],cur_name))
+#        print("добавляем точку с ref='%s' как следующую для точки с ref='%s'"%(candidat["name"],cur_name))
         if processed_flow==1:
           ways[way_id].append(candidat["poi_id"])
         else:
