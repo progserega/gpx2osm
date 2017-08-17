@@ -66,7 +66,7 @@ def get_poi(filename):
   data={}
   gpx_file = open(filename, 'r')
   gpx = gpxpy.parse(gpx_file)
-  poi_id=1
+  poi_id=-1
   for waypoint in gpx.waypoints:
     item={}
     item["name"]=waypoint.name
@@ -75,7 +75,7 @@ def get_poi(filename):
     item["poi_id"]=poi_id
     #print("waypoint %s -> (%f,%f)"%(waypoint.name, waypoint.latitude, waypoint.longitude))
     data[poi_id]=item
-    poi_id+=1
+    poi_id-=1
       
   # There are many more utility methods and functions:
   # You can manipulate/add/remove tracks, segments, points, waypoints and routes and
@@ -203,7 +203,7 @@ out_file_name=in_file_name+".osm"
 poi=get_poi(in_file_name)
 
 ways={}
-way_id=1
+way_id=-1
 #print("len(poi)=%d"%len(poi))
 for poi_id in poi:
   item=poi[poi_id]
@@ -260,7 +260,7 @@ for poi_id in poi:
           processed_flow=2
         else:
           # заканчиваем линию:
-          way_id+=1
+          way_id-=1
           break
       else:
         # добавляем точку в линию:
