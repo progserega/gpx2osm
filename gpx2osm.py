@@ -157,6 +157,9 @@ def get_nearest_points(lat, lon, poi, max_dist):
     if "way_id" in item:
       # пропускаем все точки, которые уже включены в какую-либо линию
       continue
+    if lon==item["lon"] and lat==item["lat"]:
+      # пропускаем дубли:
+      continue
     dist=great_circles.get_dist(lon,lat,item["lon"],item["lat"])
     if dist < max_dist:
       dist_list.append(dist)
@@ -188,10 +191,10 @@ def write_osm(out_file_name,poi,ways):
   xml = OSMWriter(out_file_name)
   for node_id in poi:
     node=poi[node_id]
-    xml.node(node_id, node["lat"] , node["lon"], {"power": "pole", "source":"survey","note":"сконвертировано с помощью gpx2osm", "voltage":"400", "ref":node["name"]}, version=1)
+    xml.node(node_id, node["lat"] , node["lon"], {"power": "pole", "source":"survey","note":"converted by gpx2osm", "voltage":"400", "ref":node["name"]}, version=1)
     
   for way_id in ways:
-    xml.way(way_id, {'power': 'minor_line',"source":"survey","voltage":"400","note":"сконвертировано с помощью gpx2osm"}, ways[way_id], version=1)
+    xml.way(way_id, {'power': 'minor_line',"source":"survey","voltage":"400","note":"converted by gpx2osm"}, ways[way_id], version=1)
 #xml.relation(1, {'type': 'boundary'}, [('node', 1), ('way', 2, 'outer')])
   xml.close()
 
