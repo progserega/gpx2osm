@@ -11,6 +11,87 @@ from osmwriter import OSMWriter
 
 MAX_DIST=100
 
+# проверяем, подключён ли данный конец линии к другим:
+def check_connected(ways,check_way_id,check_poi_id):
+  for way_id in ways:
+    if way_id == check_way_id:
+      continue
+    if check_poi_id in ways[way_id]:
+      return True
+  return False
+
+def check_symbol_type(s):
+  index_type=-1 # 0 - digit, 1 - text, -1 - unknown  (symbols / - etc)
+  if s.isdigit():
+    index_type=0
+  elif re.search(r'[а-я]',s.lower()) !=None or re.search(r'[a-z]',s.lower()) !=None:
+    index_type=1
+  else:
+    index_type=-1
+  return index_type
+
+def parse_ref(ref):
+  result=[]
+  tmp_result=""
+  ref_index=0
+  razryad=0
+
+  ref=ref.strip()
+  s=ref[len(ref)-1]
+  cur_block_type=check_symbol_type(s)
+
+  for index in range(len(ref)-1,-1,-1):
+    s=ref[index]
+    cur_symbol_type=check_symbol_type(s)
+
+    log.debug("index=%d"%index)
+    log.debug("s=%s"%ref[index])
+    log.debug("cur_block_type=%d"%cur_block_type)
+    log.debug("cur_symbol_type=%d"%cur_symbol_type)
+
+    if cur_symbol_type != cur_block_type:
+      if cur_block_type != -1:
+        if cur_block_type==0:
+          result.insert(0,ref_index)
+        elif cur_block_type==1:
+          result.insert(0,tmp_result)
+      # сбрасываем временные переменные:
+      ref_index=0
+      razryad=0
+      tmp_result=""
+      cur_block_type=cur_symbol_type
+
+    if cur_symbol_type == cur_block_type:
+      if cur_block_type == 0: # цифры
+        ref_index=ref_index+pow(10,razryad)*int(s)
+        razryad+=1
+      elif cur_block_type == 1: # буквы
+        tmp_result=s+tmp_result
+      else:
+        # пропуск разделителей:
+        delimiter=s
+
+    if index==0: # последний символ обработали
+      if cur_block_type != -1:
+        if cur_block_type==0:
+          result.insert(0,ref_index)
+        elif cur_block_type==1:
+          result.insert(0,tmp_result)
+
+  return result
+    
+
+def get_begin_poi_id(poi,way):
+  ref1=poi[way[0]]["ref"]
+  ref2=poi[way[len(way)-1]]["ref"]
+  if int(ref1[len(ref1)-1]) < int(ref2[len(ref2)-1]):
+    последний
+  return way[0]
+
+def get_begin_poi_id(way):
+  return way[0]
+
+
 def get_next_candidat(poi,last_point,list_newarest_points,cur_name):
   log.debug("get_next_candidat()")
   prefer_next_name=get_prefery_next_ref(cur_name,1)
@@ -89,6 +170,7 @@ def get_poi(filename):
   return data
 
 def get_prefery_begin(ref):
+  ref=ref.strip()
   index_is_digit=True
   result_ref=None
   ref_index=0
@@ -110,16 +192,18 @@ def get_prefery_begin(ref):
       continue
     elif not s.isdigit() and not index_is_digit: 
       continue 
-    elif s=='/' or s=='\\':
-      result_ref=ref[0:index].strip()
+    elif s=='/' or s=='\\' or s=='-' or s==' ':
+      result_ref=ref[0:index]
       break
     else:
-      result_ref=ref[0:index+1].strip()
+      result_ref=ref[0:index+1]
       break
   if ref_index!=1 and index_is_digit:
     # значит это конец отпайки и его не надо соединять с началом линии:
     result_ref=None
 #  print("result_ref=%s"%result_ref)
+  if result_ref!=None:
+    result_ref=result_ref.strip()
   return result_ref
 
 def get_prefery_next_ref(ref,inc):
@@ -252,6 +336,8 @@ def create_line(poi,line_name):
           log.debug("пробуем прикрепить к началу:")
           list_all_newarest_points=get_all_nearest_points(last_point["lat"], last_point["lon"],poi,MAX_DIST)
           candidat=get_begin_candidat(poi,last_point,list_all_newarest_points,cur_name)
+          # FIXME
+          candidat=None
           if candidat!=None:
             if processed_flow==1:
               ways[way_id].append(candidat["poi_id"])
@@ -280,10 +366,11 @@ def create_line(poi,line_name):
 
           # перескакиваем на добавленную точку:
           last_point=candidat
+  ways=connect_ways(ways,poi)
   return ways
 
 if __name__ == '__main__':
-  debug=False
+  debug=True
 
   log=logging.getLogger("gpx2osm")
   if debug:
@@ -307,6 +394,10 @@ if __name__ == '__main__':
 
 
   log.info("Program started")
+
+
+  print(parse_ref("z155_в_-333"))
+  sys.exit()
 
   in_file_name=sys.argv[1]
   out_file_name=in_file_name+".osm"
