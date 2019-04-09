@@ -1,7 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
 import sys
+import logging
 import re
 import gpxpy
 import gpxpy.gpx
@@ -11,19 +12,20 @@ from osmwriter import OSMWriter
 MAX_DIST=100
 
 def get_next_candidat(poi,last_point,list_newarest_points,cur_name):
+  log.debug("get_next_candidat()")
   prefer_next_name=get_prefery_next_ref(cur_name,1)
   prefer_prev_name=get_prefery_next_ref(cur_name,-1)
   
-# print("предполагаемые следующие имена: '%s' и '%s'"%(prefer_next_name,prefer_prev_name))
-# print("Ближайшие точки к poi c именем '%s' по расстоянию:"%cur_name)
+  log.debug("предполагаемые следующие имена: '%s' и '%s'"%(prefer_next_name,prefer_prev_name))
+  log.debug("Ближайшие точки к poi c именем '%s' по расстоянию:"%cur_name)
            
   candidat=None
   for poi_id in list_newarest_points:
-#    print("%s"%poi[poi_id]["name"])
+    log.debug("%s"%poi[poi_id]["name"])
     if poi[poi_id]["name"]==prefer_next_name or poi[poi_id]["name"]==prefer_prev_name:
       # ищем ближайшую опору с предполагаемым именем:
       candidat=poi[poi_id]
-#      print("нашли ближайшую подходящую по имени с ref=%s"%candidat["name"])
+      log.debug("нашли ближайшую подходящую по имени с ref=%s"%candidat["name"])
       break;
   #if candidat==None:
     # просто берём ближайшую точку:
@@ -34,27 +36,28 @@ def get_next_candidat(poi,last_point,list_newarest_points,cur_name):
 
 
 def get_begin_candidat(poi,last_point,list_all_newarest_points,cur_name):
+  log.debug("get_begin_candidat()")
   begin_ref=get_prefery_begin(cur_name)
   if begin_ref==None:
-#    print("не смог вычислить начальное имя для '%s' - пропуск"%cur_name)
+    log.debug("не смог вычислить начальное имя для '%s' - пропуск"%cur_name)
     return None
     
-#  print("предполагаем следующее имя начала: '%s'"%begin_ref)
+  log.debug("предполагаем следующее имя начала: '%s'"%begin_ref)
   
-#  print("Ближайшие точки к poi c именем '%s' по расстоянию:"%cur_name)
+  log.debug("Ближайшие точки к poi c именем '%s' по расстоянию:"%cur_name)
            
   candidat=None
   for poi_id in list_all_newarest_points:
-#    print("%s"%poi[poi_id]["name"])
+    log.debug("%s"%poi[poi_id]["name"])
     if poi[poi_id]["name"]==begin_ref:
       # ищем ближайшую опору с предполагаемым именем:
       candidat=poi[poi_id]
-#      print("нашли ближайшую подходящую по имени с ref=%s"%candidat["name"])
+      log.debug("нашли ближайшую подходящую по имени с ref=%s"%candidat["name"])
       break;
-#  if candidat==None:
-#    print("по имени не нашли - пропуск")
-#  else:
-#    print("candidat ref=%s"%candidat["name"])
+  if candidat==None:
+    log.debug("по имени не нашли - пропуск")
+  else:
+    log.debug("candidat ref=%s"%candidat["name"])
   return candidat
 
 
@@ -63,13 +66,14 @@ def get_begin_candidat(poi,last_point,list_all_newarest_points,cur_name):
 
 
 def get_poi(filename):
+  log.debug("get_poi()")
   data={}
   gpx_file = open(filename, 'r')
   gpx = gpxpy.parse(gpx_file)
   poi_id=-1
   for waypoint in gpx.waypoints:
     item={}
-    item["name"]=waypoint.name
+    item["name"]=waypoint.name.strip()
     item["lat"]=waypoint.latitude
     item["lon"]=waypoint.longitude
     item["poi_id"]=poi_id
@@ -107,10 +111,10 @@ def get_prefery_begin(ref):
     elif not s.isdigit() and not index_is_digit: 
       continue 
     elif s=='/' or s=='\\':
-      result_ref=ref[0:index]
+      result_ref=ref[0:index].strip()
       break
     else:
-      result_ref=ref[0:index+1]
+      result_ref=ref[0:index+1].strip()
       break
   if ref_index!=1 and index_is_digit:
     # значит это конец отпайки и его не надо соединять с началом линии:
@@ -146,7 +150,7 @@ def get_prefery_next_ref(ref,inc):
   if result_ref=="":
     result_ref=ref_prefix+str(ref_index+inc)+ref_postfix
 #print("result_ref=%s"%result_ref)
-  return result_ref
+  return result_ref.strip()
 
 def get_nearest_points(lat, lon, poi, max_dist):
   ids_list={}
@@ -198,86 +202,121 @@ def write_osm(out_file_name,poi,ways):
 #xml.relation(1, {'type': 'boundary'}, [('node', 1), ('way', 2, 'outer')])
   xml.close()
 
-# main:
-#print(get_prefery_begin("2/21а4"))
-#sys.exit(0)
-in_file_name=sys.argv[1]
-out_file_name=in_file_name+".osm"
-poi=get_poi(in_file_name)
+def create_line(poi,line_name):
+  ways={}
+  way_id=-1
+  for poi_id in poi:
+    item=poi[poi_id]
+    last_point=item
+    first_point=item
+    processed_flow=1
 
-ways={}
-way_id=-1
-#print("len(poi)=%d"%len(poi))
-for poi_id in poi:
-  item=poi[poi_id]
-  last_point=item
-  first_point=item
-  processed_flow=1
+    log.debug("process poi_d=%s"%poi_id)
+    log.debug("process poi ref=%s"%item["name"])
 
-#  print("process poi_d=%s"%poi_id)
-#  print("process poi ref=%s"%item["name"])
+    # первая точка в линии:
+    if "way_id" not in item:
+      # если точку ещё не добавляли в линию:
+      if way_id not in ways:
+        ways[way_id]=[]
+      item["way_id"]=way_id
+      ways[way_id].append(poi_id)
 
-  # первая точка в линии:
-  if "way_id" not in item:
-    # если точку ещё не добавляли в линию:
-    if way_id not in ways:
-      ways[way_id]=[]
-    item["way_id"]=way_id
-    ways[way_id].append(poi_id)
+      while True:
+        end_line=False
+        dist=0
+        # следующие точки в линии:
+        cur_name=last_point["name"]
+        log.debug("=========  Ищем ближайшие точки для: '%s'"%cur_name)
+        list_newarest_points=get_nearest_points(last_point["lat"], last_point["lon"],poi,MAX_DIST)
+        log.debug("len(list_newarest_points)=%d"%len(list_newarest_points))
+        for i in list_newarest_points:
+          log.debug("id:%d, ref:%s"%(i,poi[i]["name"]))
 
-    while True:
-      end_line=False
-      dist=0
-      # следующие точки в линии:
-      cur_name=last_point["name"]
-#      print("=========  Ищем ближайшие точки для: '%s'"%cur_name)
-      list_newarest_points=get_nearest_points(last_point["lat"], last_point["lon"],poi,MAX_DIST)
-#      print("len(list_newarest_points)=%d"%len(list_newarest_points))
-
-      if len(list_newarest_points)==0:
-        # будем заканчивать линию:
-        end_line=True
-      else:
-        candidat=get_next_candidat(poi,last_point,list_newarest_points,cur_name)
-        if candidat==None:
+        if len(list_newarest_points)==0:
+          # будем заканчивать линию:
           end_line=True
         else:
-          dist=great_circles.get_dist(last_point["lon"],last_point["lat"],candidat["lon"],candidat["lat"])
+          candidat=get_next_candidat(poi,last_point,list_newarest_points,cur_name)
+          if candidat==None:
+            end_line=True
+          else:
+            dist=great_circles.get_dist(last_point["lon"],last_point["lat"],candidat["lon"],candidat["lat"])
 
-      if dist>MAX_DIST or end_line==True:
-        # пробуем прикрепить к началу (к части другой линии):
-#        print("пробуем прикрепить к началу:")
-        list_all_newarest_points=get_all_nearest_points(last_point["lat"], last_point["lon"],poi,MAX_DIST)
-        candidat=get_begin_candidat(poi,last_point,list_all_newarest_points,cur_name)
-        if candidat!=None:
+        log.debug("dist=%f"%dist)
+        log.debug("candidat=")
+        log.debug(candidat)
+
+        if dist>MAX_DIST or end_line==True:
+          # пробуем прикрепить к началу (к части другой линии):
+          log.debug("пробуем прикрепить к началу:")
+          list_all_newarest_points=get_all_nearest_points(last_point["lat"], last_point["lon"],poi,MAX_DIST)
+          candidat=get_begin_candidat(poi,last_point,list_all_newarest_points,cur_name)
+          if candidat!=None:
+            if processed_flow==1:
+              ways[way_id].append(candidat["poi_id"])
+            else:
+              ways[way_id].insert(0,candidat["poi_id"])
+            candidat["way_id"]=way_id
+          
+          if processed_flow==1:
+            # мы прошли линию только в одну сторону от начальной точки.
+            # пробуем во вторую сторону от начальной точки:
+            last_point=first_point
+            processed_flow=2
+          else:
+            # заканчиваем линию:
+            way_id-=1
+            break
+        else:
+          # добавляем точку в линию:
+          log.debug("добавляем точку с ref='%s' как следующую для точки с ref='%s'"%(candidat["name"],cur_name))
           if processed_flow==1:
             ways[way_id].append(candidat["poi_id"])
           else:
             ways[way_id].insert(0,candidat["poi_id"])
+
           candidat["way_id"]=way_id
-        
-        if processed_flow==1:
-          # мы прошли линию только в одну сторону от начальной точки.
-          # пробуем во вторую сторону от начальной точки:
-          last_point=first_point
-          processed_flow=2
-        else:
-          # заканчиваем линию:
-          way_id-=1
-          break
-      else:
-        # добавляем точку в линию:
-#        print("добавляем точку с ref='%s' как следующую для точки с ref='%s'"%(candidat["name"],cur_name))
-        if processed_flow==1:
-          ways[way_id].append(candidat["poi_id"])
-        else:
-          ways[way_id].insert(0,candidat["poi_id"])
 
-        candidat["way_id"]=way_id
+          # перескакиваем на добавленную точку:
+          last_point=candidat
+  return ways
 
-        # перескакиваем на добавленную точку:
-        last_point=candidat
+if __name__ == '__main__':
+  debug=False
 
-write_osm(out_file_name,poi,ways)
-        
+  log=logging.getLogger("gpx2osm")
+  if debug:
+    log.setLevel(logging.DEBUG)
+  else:
+    log.setLevel(logging.INFO)
+
+  formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+  # log to file:
+#  fh = logging.FileHandler(conf.log_path)
+#  fh.setFormatter(formatter)
+  # add handler to logger object
+#  log.addHandler(fh)
+
+  if debug:
+    # логирование в консоль:
+    #stdout = logging.FileHandler("/dev/stdout")
+    stdout = logging.StreamHandler(sys.stdout)
+    stdout.setFormatter(formatter)
+    log.addHandler(stdout)
+
+
+  log.info("Program started")
+
+  in_file_name=sys.argv[1]
+  out_file_name=in_file_name+".osm"
+  poi=get_poi(in_file_name)
+
+  log.debug("len(poi)=%d"%len(poi))
+
+  osm=create_line(poi,"test_line")
+
+  write_osm(out_file_name,poi,osm)
+          
+  log.info("Program end")
         
