@@ -99,10 +99,12 @@ def check_symbol_type(s):
 def connect_ways(ways,poi):
   log.debug("connect_ways()")
   for way_id in ways:
+    selected_begin=False
     way=ways[way_id]
     check_list=[]
     begin_poi_id=get_begin_of_way(way,poi)
     if begin_poi_id != None:
+      selected_begin=True
       check_list.append(begin_poi_id)
       if begin_poi_id == way[0]:
         check_list.append(way[len(way)-1])
@@ -112,7 +114,8 @@ def connect_ways(ways,poi):
       check_list.append(way[0])
       check_list.append(way[len(way)-1])
     for cur_node_id in check_list:
-      if check_connected(ways,way_id,cur_node_id) == False:
+      if check_connected(ways,way_id,cur_node_id) == False or selected_begin == True:
+        # пробуем если никуда не подключён, или если определили, что это начало отпайки
         # пробуем подсоединить:
         log.debug("try connect poi with ref=%s"%poi[cur_node_id]["name"])
         new_ref=remove_index(poi[cur_node_id]["name"])
