@@ -8,6 +8,7 @@ import gpxpy
 import gpxpy.gpx
 import great_circles
 from osmwriter import OSMWriter
+import argparse
 
 MAX_DIST=100
 
@@ -486,11 +487,43 @@ def create_line(poi,line_name):
 if __name__ == '__main__':
   debug=False
 
+  # init parse args:
+  parser = argparse.ArgumentParser(description='Convertor gpx to osm (OpenStreetMap)',add_help=True)
+  parser.add_argument("--input","-i",action='store', type=str, help="""input gpx file.
+Имя должно состоять из полей:
+
+Для ВЛ:
+ВЛ <напряжение> <имя линии>_line.gpx
+
+Для низковольтных фидеров:
+<имя линии>_line04.gpx
+
+Для подстанций:
+<имя подстанции>_station.gpx
+
+Для ТП:
+<имя>_substation.gpx
+
+Например:
+ВЛ 6 ф.Строительство ЦРП ПГРЭС_line.gpx
+ф.1_line04.gpx
+ПС 110_10 Троица_station.gpx
+КТП 6104 Быт_substation.gpx
+""")
+  parser.add_argument("--output","-o",action='store', help="output osm file")
+  parser.add_argument("--verbose","-v",action='count', help="debug logging")
+  args = parser.parse_args()
+
+  # init logging system:
   log=logging.getLogger("gpx2osm")
-  if debug:
-    log.setLevel(logging.DEBUG)
-  else:
+  if args.verbose==None:
+    log.setLevel(logging.ERROR)
+  elif args.verbose==1:
+    log.setLevel(logging.WARNING)
+  elif args.verbose==2:
     log.setLevel(logging.INFO)
+  elif args.verbose>2:
+    log.setLevel(logging.DEBUG)
 
   formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
   # log to file:
@@ -499,20 +532,23 @@ if __name__ == '__main__':
   # add handler to logger object
 #  log.addHandler(fh)
 
-  if debug:
-    # логирование в консоль:
-    #stdout = logging.FileHandler("/dev/stdout")
-    stdout = logging.StreamHandler(sys.stdout)
-    stdout.setFormatter(formatter)
-    log.addHandler(stdout)
+  # логирование в консоль:
+  #stdout = logging.FileHandler("/dev/stdout")
+  stdout = logging.StreamHandler(sys.stdout)
+  stdout.setFormatter(formatter)
+  log.addHandler(stdout)
 
 
   log.info("Program started")
 #  print(remove_index("106"))
 #  sys.exit()
 
-  in_file_name=sys.argv[1]
-  out_file_name=in_file_name+".osm"
+  if args.output == None or args.input == None:
+    log.error("need 2 params, try --help")
+    sys.exit(1)
+
+  in_file_name=args.input
+  out_file_name=args.output
   poi=get_poi(in_file_name)
 
   log.debug("len(poi)=%d"%len(poi))
