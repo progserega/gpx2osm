@@ -302,6 +302,7 @@ def get_poi(filename):
     item["name"]=waypoint.name.strip()
     item["lat"]=waypoint.latitude
     item["lon"]=waypoint.longitude
+    item["ele"]=waypoint.ele
     item["poi_id"]=poi_id
     #print("waypoint %s -> (%f,%f)"%(waypoint.name, waypoint.latitude, waypoint.longitude))
     data[poi_id]=item
@@ -390,16 +391,44 @@ def get_all_nearest_points(lat, lon, poi, max_dist):
     result.append(ids_list[dist])
   return result
 
-def write_osm(out_file_name,poi,ways):
+def write_osm(out_file_name,poi,ways,tags,skip_relation_creation=False):
   xml = OSMWriter(out_file_name)
+  # nodes:
   for node_id in poi:
     node=poi[node_id]
-    xml.node(node_id, node["lat"] , node["lon"], {"power": "pole", "source":"survey","note":"converted by gpx2osm", "voltage":"400", "ref":node["name"]}, version=1)
+    if tags["power"]=="minor_line":
+      xml.node(node_id, node["lat"] , node["lon"], {"power": "pole", "ele":node["ele"], "source":"survey","note":"converted by gpx2osm", "voltage":"%d"%tags["voltage"], "ref":node["name"]}, version=1)
+    elif tags["power"]=="line":
+      xml.node(node_id, node["lat"] , node["lon"], {"power": "tower", "ele":node["ele"], "source":"survey","note":"converted by gpx2osm", "voltage":"%d"%tags["voltage"], "ref":node["name"]}, version=1)
+    elif tags["power"]=="cable":
+      xml.node(node_id, node["lat"] , node["lon"], {"source":"survey","note":"converted by gpx2osm", "ref":node["name"]}, version=1)
+    elif tags["power"]=="sub_station":
+      xml.node(node_id, node["lat"] , node["lon"], {"power": "sub_station", "ele":node["ele"], "source":"survey","note":"converted by gpx2osm", "voltage":"%d"%tags["voltage"], "ref":node["name"]}, version=1)
+    elif tags["power"]=="station":
+      xml.node(node_id, node["lat"] , node["lon"], {"ele":node["ele"], "source":"survey","note":"converted by gpx2osm"}, version=1)
+    else:
+      log.error("unknown type of power object - exit!")
+      return False
     
+  # ways:
   for way_id in ways:
-    xml.way(way_id, {'power': 'minor_line',"source":"survey","voltage":"400","note":"converted by gpx2osm"}, ways[way_id], version=1)
-#xml.relation(1, {'type': 'boundary'}, [('node', 1), ('way', 2, 'outer')])
+    if tags["power"]=="minor_line" or tags["power"]=="line" or tags["power"]=="cable":
+      xml.way(way_id, {'alt_name':tags['name'],'power': tags['power'],"source":"survey","voltage":"%d"%tags['voltage'],"note":"converted by gpx2osm"}, ways[way_id], version=1)
+    elif tags["power"]=="sub_station":
+      xml.way(way_id, {'name':tags['name'],'power': tags['power'],"source":"survey","voltage":"%d"%tags['voltage'],"note":"converted by gpx2osm"}, ways[way_id], version=1)
+    else:
+      log.info("not write way-data to osm for this type of power-object")
+   
+  # relation
+  if skip_relation_creation!=True:
+    relation_members=[]
+    for way_id in ways:
+      relation_members.append(('way',way_id,''))
+
+    if tags["power"]=="minor_line" or tags["power"]=="line" or tags["power"]=="cable":
+      xml.relation(1, {'type': 'route','route':'power','voltage':"%d"%tags['voltage'],'name':tags['name']},relation_members )
   xml.close()
+  return True
 
 def create_line(poi,line_name):
   ways={}
@@ -484,6 +513,51 @@ def create_line(poi,line_name):
   ways=connect_ways(ways,poi)
   return ways
 
+def parse_file_name(name):
+  result=None
+  data_type=None
+  voltage=0
+  name=None
+
+  if "_line." in name and re.search(r'^вл ',name.lower()) != None:
+    result={}
+    # vl
+    words=name.split(' ')
+    if words[1].isdigit():
+      result["voltage"]=int(words[1]) * 1000
+    result["name"]=re.sub(r'_line\..*','',name)
+    result["power"]="line"
+  if "_line." in name and (re.search(r'^квл ',name.lower()) != None or re.search(r'^кл ',name.lower()) != None):
+    result={}
+    # vl
+    words=name.split(' ')
+    if words[1].isdigit():
+      result["voltage"]=int(words[1]) * 1000
+    result["name"]=re.sub(r'_line\..*','',name)
+    result["power"]="cable"
+
+  elif "_line04." in name:
+    result={}
+    result["voltage"]=400
+    result["name"]=re.sub(r'_line04\..*','',name)
+    result["power"]="minor_line"
+    # minor_line
+  elif "_station." in name and re.search(r'^пс ',name.lower()) != None:
+    # ps
+    words=name.split(' ')
+    if words[1].isdigit():
+      result["voltage"]=int(words[1]) * 1000
+    result["name"]=re.sub(r'_station\..*','',name)
+    result["power"]="station"
+  elif "_substation." in name:
+    #tp
+    result={}
+    result["power"]="sub_station"
+  else:
+    # error
+    log.error("no type of data in name of gpx-file!")
+  return result
+
 if __name__ == '__main__':
   debug=False
 
@@ -512,6 +586,7 @@ if __name__ == '__main__':
 """)
   parser.add_argument("--output","-o",action='store', help="output osm file")
   parser.add_argument("--verbose","-v",action='count', help="debug logging")
+  parser.add_argument('--skip_relation_creation', "-s", dest='feature', action='store_true', help="do not create relation for lines")
   args = parser.parse_args()
 
   # init logging system:
@@ -553,9 +628,15 @@ if __name__ == '__main__':
 
   log.debug("len(poi)=%d"%len(poi))
 
-  osm=create_line(poi,"test_line")
+  tags=parse_file_name(in_file_name)
+  if tags == None:
+    log.error("parse input file name - see help")
+    sys.exit(1)
 
-  write_osm(out_file_name,poi,osm)
+  if tags["power"]=="line" or tags["power"]=="minor_line":
+    osm=create_line(poi,"test_line")
+
+  write_osm(out_file_name,poi,osm,tags,args.skip_relation_creation)
           
   log.info("Program end")
         
