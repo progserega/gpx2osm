@@ -605,7 +605,7 @@ if __name__ == '__main__':
   elif args.verbose>2:
     log.setLevel(logging.DEBUG)
 
-  formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+  formatter = logging.Formatter('%(asctime)s - %(name)s - %(filename)s:%(lineno)d - %(funcName)s() %(levelname)s - %(message)s')
   # log to file:
 #  fh = logging.FileHandler(conf.log_path)
 #  fh.setFormatter(formatter)
