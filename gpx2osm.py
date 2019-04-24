@@ -304,7 +304,10 @@ def get_poi(filename):
     item["name"]=waypoint.name.strip()
     item["lat"]=waypoint.latitude
     item["lon"]=waypoint.longitude
-    item["ele"]=waypoint.elevation
+    if waypoint.elevation == None:
+      item["ele"]=0
+    else:
+      item["ele"]=waypoint.elevation
     item["poi_id"]=poi_id
     #print("waypoint %s -> (%f,%f)"%(waypoint.name, waypoint.latitude, waypoint.longitude))
     data[poi_id]=item
