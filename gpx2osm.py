@@ -402,15 +402,15 @@ def write_osm(out_file_name,poi,ways,tags,skip_relation_creation=False,source="s
   for node_id in poi:
     node=poi[node_id]
     if tags["power"]=="minor_line":
-      xml.node(node_id, node["lat"] , node["lon"], {"power": "pole", "ele":"%f"%node["ele"], "source":source,"note":note, "voltage":"%d"%tags["voltage"], "ref":node["name"]}, version=1)
+      xml.node(node_id, node["lat"] , node["lon"], {"power": "pole", "ele":"%f"%node["ele"], "source":source,"note":tags["name"], "voltage":"%d"%tags["voltage"], "ref":node["name"]}, version=1)
     elif tags["power"]=="line":
-      xml.node(node_id, node["lat"] , node["lon"], {"power": "tower", "ele":"%f"%node["ele"], "source":source,"note":note, "voltage":"%d"%tags["voltage"], "ref":node["name"]}, version=1)
+      xml.node(node_id, node["lat"] , node["lon"], {"power": "tower", "ele":"%f"%node["ele"], "source":source,"note":tags["name"], "voltage":"%d"%tags["voltage"], "ref":node["name"]}, version=1)
     elif tags["power"]=="cable":
-      xml.node(node_id, node["lat"] , node["lon"], {"source":source,"note":note, "ref":node["name"]}, version=1)
+      xml.node(node_id, node["lat"] , node["lon"], {"source":source,"note":tags["name"], "ref":node["name"]}, version=1)
     elif tags["power"]=="sub_station":
       xml.node(node_id, node["lat"] , node["lon"], {"power": "sub_station", "ele":"%f"%node["ele"], "source":source,"note":note, "voltage":"%d"%tags["voltage"], "ref":node["name"]}, version=1)
     elif tags["power"]=="station":
-      xml.node(node_id, node["lat"] , node["lon"], {"ele":"%f"%node["ele"], "source":source,"note":note}, version=1)
+      xml.node(node_id, node["lat"] , node["lon"], {"ele":"%f"%node["ele"], "source":source,"note":tags["name"]}, version=1)
     else:
       log.error("unknown type of power object - exit!")
       return False
