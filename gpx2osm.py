@@ -12,6 +12,13 @@ import argparse
 
 MAX_DIST=100
 
+def close_polygon(osm):
+  for way_id in osm:
+    way=osm[way_id]
+    begin_node_id=way[0]
+    way.append(begin_node_id)
+  return osm
+
 # проверяем, подключён ли данный конец линии к другим:
 def check_connected(ways,check_way_id,check_poi_id):
   log.debug("check_connected()")
@@ -423,7 +430,7 @@ def write_osm(out_file_name,poi,ways,tags,skip_relation_creation=False,source="s
   for way_id in ways:
     if tags["power"]=="minor_line" or tags["power"]=="line" or tags["power"]=="cable":
       xml.way(way_id, {name_tag:tags['name'],'power': tags['power'],"source":source,"voltage":"%d"%tags['voltage'],"note":note}, ways[way_id], version=1)
-    elif tags["power"]=="sub_station":
+    elif tags["power"]=="station":
       xml.way(way_id, {'name':tags['name'],'power': tags['power'],"source":source,"voltage":"%d"%tags['voltage'],"note":note}, ways[way_id], version=1)
     else:
       log.info("not write way-data to osm for this type of power-object")
@@ -439,7 +446,7 @@ def write_osm(out_file_name,poi,ways,tags,skip_relation_creation=False,source="s
   xml.close()
   return True
 
-def create_line(poi,line_name):
+def create_line(poi):
   ways={}
   way_id=-1
   for poi_id in poi:
@@ -550,10 +557,19 @@ def parse_file_name(name):
     # minor_line
   elif "_station." in name and re.search(r'^пс ',name.lower()) != None:
     # ps
+    result={}
     words=name.split(' ')
+    
     if words[1].isdigit():
       result["voltage"]=int(words[1]) * 1000
-    result["name"]=re.sub(r'_station\..*','',name)
+    else:
+      voltage_str=re.sub(r'_.*','',words[1])
+      if voltage_str.isdigit():
+        result["voltage"]=int(voltage_str) * 1000
+      else:
+        log.error("error get voltage from name of station")
+        return None
+    result["name"]=re.sub(r'_station\..*','',name).replace('_','/')
     result["power"]="station"
   elif "_substation." in name:
     #tp
@@ -642,7 +658,13 @@ if __name__ == '__main__':
     sys.exit(1)
 
   if tags["power"]=="line" or tags["power"]=="minor_line":
-    osm=create_line(poi,"test_line")
+    osm=create_line(poi)
+
+  if tags["power"]=="station":
+    osm=create_line(poi)
+    if close_polygon(osm) == None:
+      log.error("close_polygon()")
+      sys.exit(1)
 
   if hasattr(args,'skip_relation_creation') == True:
     skip_relation_creation=args.skip_relation_creation
