@@ -415,7 +415,10 @@ def write_osm(out_file_name,poi,ways,tags,skip_relation_creation=False,source="s
     elif tags["power"]=="cable":
       xml.node(node_id, node["lat"] , node["lon"], {"source":source,"note":tags["name"], "ref":node["name"]}, version=1)
     elif tags["power"]=="sub_station":
-      xml.node(node_id, node["lat"] , node["lon"], {"power": "sub_station", "ele":"%f"%node["ele"], "source":source,"note":note, "voltage":"%d"%tags["voltage"], "ref":node["name"]}, version=1)
+      if "voltage" in tags:
+        xml.node(node_id, node["lat"] , node["lon"], {"power": "sub_station", "ele":"%f"%node["ele"], "source":source,"note":note, "voltage":"%d"%tags["voltage"], "ref":node["name"]}, version=1)
+      else:
+        xml.node(node_id, node["lat"] , node["lon"], {"power": "sub_station", "ele":"%f"%node["ele"], "source":source,"note":note, "ref":node["name"]}, version=1)
     elif tags["power"]=="station":
       xml.node(node_id, node["lat"] , node["lon"], {"ele":"%f"%node["ele"], "source":source,"note":tags["name"]}, version=1)
     else:
@@ -656,6 +659,8 @@ if __name__ == '__main__':
   if tags == None:
     log.error("parse input file name - see help")
     sys.exit(1)
+  
+  osm=None
 
   if tags["power"]=="line" or tags["power"]=="minor_line":
     osm=create_line(poi)
@@ -665,6 +670,9 @@ if __name__ == '__main__':
     if close_polygon(osm) == None:
       log.error("close_polygon()")
       sys.exit(1)
+
+  if tags["power"]=="sub_station":
+    osm={}
 
   if hasattr(args,'skip_relation_creation') == True:
     skip_relation_creation=args.skip_relation_creation
@@ -679,6 +687,14 @@ if __name__ == '__main__':
     note=args.note
   else:
     note="converted by gpx2osm"
+
+  if osm == None:
+    log.error("error type of input file - see help")
+    if "power" in tags:
+      log.info("power=%s"%tags["power"])
+    else:
+      log.error("no tag power in tags")
+    sys.exit(1)
 
   write_osm(out_file_name,poi,osm,tags,skip_relation_creation,source=source,note=note)
           
