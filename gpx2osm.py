@@ -131,19 +131,24 @@ def connect_ways(ways,poi):
         # ищем такую опору:
         for node_id in poi:
           if poi[node_id]["name"] == new_ref:
+            log.debug("found ref=%s"%new_ref)
             cur_node=poi[cur_node_id]
             if node_id not in way:
               # ещё не добавляли эту точку в эту линию
               candidat=poi[node_id]
               dist=great_circles.get_dist(cur_node["lon"],cur_node["lat"],candidat["lon"],candidat["lat"])
+              log.debug("dist=%f"%dist)
               if dist < MAX_DIST:
+                log.debug("not far - accept node!")
                 # не слишком далеко, значит присоединяем:
                 if cur_node_id == way[0]:
                   # вставляем в начало:
                   way.insert(0,candidat["poi_id"])
+                  break
                 else:
                   # добавляем в конец
                   way.append(candidat["poi_id"])
+                  break
 
   return ways
 
