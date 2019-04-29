@@ -543,7 +543,7 @@ def parse_file_name(name):
       result["voltage"]=int(words[1]) * 1000
     result["name"]=re.sub(r'_line\..*','',name)
     result["power"]="line"
-  if "_line." in name and (re.search(r'^квл ',name.lower()) != None or re.search(r'^кл ',name.lower()) != None):
+  elif "_line." in name and (re.search(r'^квл ',name.lower()) != None or re.search(r'^кл ',name.lower()) != None):
     result={}
     # vl
     words=name.split(' ')
@@ -551,7 +551,6 @@ def parse_file_name(name):
       result["voltage"]=int(words[1]) * 1000
     result["name"]=re.sub(r'_line\..*','',name)
     result["power"]="cable"
-
   elif "_line04." in name:
     result={}
     result["voltage"]=400
