@@ -159,7 +159,7 @@ def get_prefery_next_ref(ref,inc):
   log.debug("get_prefery_next_ref(%s,%d)"%(ref,inc))
   parsed=parse_ref(ref)
   if parsed==None:
-    log.error("parse_ref(ref)")
+    log.warning("parse_ref(ref)")
     return None
   last_index=len(parsed)-1
   last_word=parsed[last_index]
@@ -196,7 +196,7 @@ def parse_ref(ref):
 
   ref=ref.strip()
   if len(ref)==0:
-    log.error("ref is empty!")
+    log.warning("ref is empty!")
     return None
   s=ref[len(ref)-1]
   cur_block_type=check_symbol_type(s)
