@@ -545,7 +545,7 @@ def parse_file_name(path_name):
   result=None
 
   log.debug("path input file=%s"%path_name)
-  name=os.path.basename(path_name)
+  name=os.path.basename(path_name).strip()
   log.debug("file name=%s"%name)
 
   if "_line." in name and re.search(r'^вл ',name.lower()) != None:
