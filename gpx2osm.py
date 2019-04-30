@@ -248,17 +248,6 @@ def parse_ref(ref):
   return result
     
 
-def get_begin_poi_id(poi,way):
-  ref1=poi[way[0]]["ref"]
-  ref2=poi[way[len(way)-1]]["ref"]
-  if int(ref1[len(ref1)-1]) < int(ref2[len(ref2)-1]):
-    последний
-  return way[0]
-
-def get_begin_poi_id(way):
-  return way[0]
-
-
 def get_next_candidat(poi,last_point,list_newarest_points,cur_name):
   log.debug("get_next_candidat()")
   prefer_next_name=get_prefery_next_ref(cur_name,1)
