@@ -33,6 +33,9 @@ def remove_index(ref):
   log.debug("remove_index()")
   result=""
   parsed=parse_ref(ref)
+  if parsed==None:
+    log.warning("parse_ref()")
+    return None
   log.debug(parsed)
   parsed_len=len(parsed)
 #  log.debug("parsed_len=%d"%parsed_len)
@@ -155,6 +158,9 @@ def connect_ways(ways,poi):
 def get_prefery_next_ref(ref,inc):
   log.debug("get_prefery_next_ref(%s,%d)"%(ref,inc))
   parsed=parse_ref(ref)
+  if parsed==None:
+    log.error("parse_ref(ref)")
+    return None
   last_index=len(parsed)-1
   last_word=parsed[last_index]
   last_type=check_symbol_type(last_word)
@@ -189,6 +195,9 @@ def parse_ref(ref):
   delimiter=""
 
   ref=ref.strip()
+  if len(ref)==0:
+    log.error("ref is empty!")
+    return None
   s=ref[len(ref)-1]
   cur_block_type=check_symbol_type(s)
 
@@ -313,7 +322,10 @@ def get_poi(filename):
 #    print(waypoint)
 #sys.exit()
     item={}
-    item["name"]=waypoint.name.strip()
+    if waypoint.name == None:
+      item["name"]=""
+    else:
+      item["name"]=waypoint.name.strip()
     item["lat"]=waypoint.latitude
     item["lon"]=waypoint.longitude
     if waypoint.elevation == None:
@@ -338,6 +350,8 @@ def get_prefery_begin(ref):
   result_ref=None
   ref_index=0
   razryad=0
+  if len(ref)==0:
+    return None
   s=ref[len(ref)-1]
   if s.isdigit():
     index_is_digit=True
