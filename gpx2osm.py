@@ -4,6 +4,7 @@
 import sys
 import logging
 import re
+import os
 import gpxpy
 import gpxpy.gpx
 import great_circles
@@ -551,8 +552,12 @@ def create_line(poi):
   ways=connect_ways(ways,poi)
   return ways
 
-def parse_file_name(name):
+def parse_file_name(path_name):
   result=None
+
+  log.debug("path input file=%s"%path_name)
+  name=os.path.basename(path_name)
+  log.debug("file name=%s"%name)
 
   if "_line." in name and re.search(r'^вл ',name.lower()) != None:
     result={}
