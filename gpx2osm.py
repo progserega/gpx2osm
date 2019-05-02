@@ -636,7 +636,7 @@ if __name__ == '__main__':
   parser.add_argument('--skip_relation_creation', "-r", action='store_true', help="do not create relation for lines")
   parser.add_argument("--source","-s",action='store', help="value of 'source' tag 'survey' by default")
   parser.add_argument("--note","-n",action='store', help="value of 'note' tag 'converted by gpx2osm' by default")
-  parser.add_argument('--skip_dubles', "-d", action='store_true', help="skip dubles of poi (some name and some lat and lon)")
+  parser.add_argument('--not_skip_dubles', "-d", action='store_false', help="Do not skip dubles of poi (same name and some lat and lon) - default False")
   parser.add_argument("--max_dist","-m",action='store', default=100, help="max distance between towers (default 100 meters)")
   args = parser.parse_args()
 
@@ -681,7 +681,8 @@ if __name__ == '__main__':
 
   in_file_name=args.input
   out_file_name=args.output
-  poi=get_poi(in_file_name,args.skip_dubles)
+
+  poi=get_poi(in_file_name,skip_dubles=args.not_skip_dubles)
 
   log.debug("len(poi)=%d"%len(poi))
 
