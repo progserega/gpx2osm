@@ -309,7 +309,7 @@ def is_poi_exist(poi_list,poi):
       return True
   return False
 
-def get_poi(filename):
+def get_poi(filename,skip_dubles=False):
   log.debug("get_poi()")
   data={}
   gpx_file = open(filename, 'r')
@@ -331,9 +331,11 @@ def get_poi(filename):
       item["ele"]=waypoint.elevation
     item["poi_id"]=poi_id
     #print("waypoint %s -> (%f,%f)"%(waypoint.name, waypoint.latitude, waypoint.longitude))
-    if is_poi_exist(data,item)==False:
-      data[poi_id]=item
-      poi_id-=1
+    if skip_dubles == True:
+      if is_poi_exist(data,item)==True:
+        continue
+    data[poi_id]=item
+    poi_id-=1
       
   # There are many more utility methods and functions:
   # You can manipulate/add/remove tracks, segments, points, waypoints and routes and
@@ -631,9 +633,10 @@ if __name__ == '__main__':
 """)
   parser.add_argument("--output","-o",action='store', help="output osm file")
   parser.add_argument("--verbose","-v",action='count', help="debug logging")
-  parser.add_argument('--skip_relation_creation', "-r", dest='feature', action='store_true', help="do not create relation for lines")
+  parser.add_argument('--skip_relation_creation', "-r", action='store_true', help="do not create relation for lines")
   parser.add_argument("--source","-s",action='store', help="value of 'source' tag 'survey' by default")
   parser.add_argument("--note","-n",action='store', help="value of 'note' tag 'converted by gpx2osm' by default")
+  parser.add_argument('--skip_dubles', "-d", action='store_true', help="skip dubles of poi (some name and some lat and lon)")
   args = parser.parse_args()
 
   # init logging system:
@@ -671,7 +674,7 @@ if __name__ == '__main__':
 
   in_file_name=args.input
   out_file_name=args.output
-  poi=get_poi(in_file_name)
+  poi=get_poi(in_file_name,args.skip_dubles)
 
   log.debug("len(poi)=%d"%len(poi))
 
@@ -694,11 +697,6 @@ if __name__ == '__main__':
   if tags["power"]=="sub_station":
     osm={}
 
-  if hasattr(args,'skip_relation_creation') == True:
-    skip_relation_creation=args.skip_relation_creation
-  else:
-    skip_relation_creation=False
-
   if args.source != None:
     source=args.source
   else:
@@ -716,7 +714,7 @@ if __name__ == '__main__':
       log.error("no tag power in tags")
     sys.exit(1)
 
-  write_osm(out_file_name,poi,osm,tags,skip_relation_creation,source=source,note=note)
+  write_osm(out_file_name,poi,osm,tags,args.skip_relation_creation,source=source,note=note)
           
   log.info("Program end")
         
