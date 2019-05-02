@@ -300,7 +300,14 @@ def get_begin_candidat(poi,last_point,list_all_newarest_points,cur_name):
 
   
 
-
+def is_poi_exist(poi_list,poi):
+  for poi_id in poi_list:
+    item=poi_list[poi_id]
+    if item["name"]==poi["name"] and\
+      item["lat"]==poi["lat"] and\
+      item["lon"]==poi["lon"]:
+      return True
+  return False
 
 def get_poi(filename):
   log.debug("get_poi()")
@@ -310,7 +317,7 @@ def get_poi(filename):
   poi_id=-1
   for waypoint in gpx.waypoints:
 #    print(waypoint)
-#sys.exit()
+#    sys.exit()
     item={}
     if waypoint.name == None:
       item["name"]=""
@@ -324,8 +331,9 @@ def get_poi(filename):
       item["ele"]=waypoint.elevation
     item["poi_id"]=poi_id
     #print("waypoint %s -> (%f,%f)"%(waypoint.name, waypoint.latitude, waypoint.longitude))
-    data[poi_id]=item
-    poi_id-=1
+    if is_poi_exist(data,item)==False:
+      data[poi_id]=item
+      poi_id-=1
       
   # There are many more utility methods and functions:
   # You can manipulate/add/remove tracks, segments, points, waypoints and routes and
