@@ -508,10 +508,10 @@ def create_line(poi):
             end_line=True
           else:
             dist=great_circles.get_dist(last_point["lon"],last_point["lat"],candidat["lon"],candidat["lat"])
+          log.debug("candidat=")
+          log.debug(candidat)
 
         log.debug("dist=%f"%dist)
-        log.debug("candidat=")
-        log.debug(candidat)
 
         if dist>MAX_DIST or end_line==True:
           # пробуем прикрепить к началу (к части другой линии):
@@ -637,6 +637,7 @@ if __name__ == '__main__':
   parser.add_argument("--source","-s",action='store', help="value of 'source' tag 'survey' by default")
   parser.add_argument("--note","-n",action='store', help="value of 'note' tag 'converted by gpx2osm' by default")
   parser.add_argument('--skip_dubles', "-d", action='store_true', help="skip dubles of poi (some name and some lat and lon)")
+  parser.add_argument("--max_dist","-m",action='store', default=100, help="max distance between towers (default 100 meters)")
   args = parser.parse_args()
 
   # init logging system:
@@ -663,6 +664,12 @@ if __name__ == '__main__':
   stdout.setFormatter(formatter)
   log.addHandler(stdout)
 
+  try:
+    MAX_DIST=int(args.max_dist)
+  except:
+    log.error("--max_dist must be integer! See --help")
+    sys.exit(1)
+  log.debug("max_dist=%s"%args.max_dist)
 
   log.info("Program started")
 #  print(remove_index("106"))
