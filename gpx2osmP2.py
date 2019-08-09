@@ -564,6 +564,8 @@ def parse_file_name(path_name):
     words=name.split(' ')
     if words[1].isdigit():
       result["voltage"]=int(words[1]) * 1000
+    elif re.match("^\d+?\.\d+?$", words[1].replace(',','.')) is not None:
+      result["voltage"]=int(float(words[1].replace(',','.')) * 1000)
     result["name"]=re.sub(u'_line\..*','',name)
     result["power"]="line"
   elif "_line." in name and (re.search(u'^квл ',name.lower()) != None or re.search(u'^кл ',name.lower()) != None):
