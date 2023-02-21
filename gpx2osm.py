@@ -696,7 +696,7 @@ if __name__ == '__main__':
   
   osm=None
 
-  if tags["power"]=="line" or tags["power"]=="minor_line":
+  if tags["power"]=="line" or tags["power"]=="minor_line" or tags["power"]=="cable":
     osm=create_line(poi)
 
   if tags["power"]=="station":
