@@ -558,7 +558,7 @@ def parse_file_name(path_name):
   name=os.path.basename(path_name).strip()
   log.debug("file name=%s"%name)
 
-  if "_line." in name and re.search(r'^вл ',name.lower()) != None:
+  if "_line." in name and re.search(r'^вл[ -_]',name.lower()) != None:
     result={}
     # vl
     words=name.split(' ')
@@ -568,7 +568,7 @@ def parse_file_name(path_name):
       result["voltage"]=int(float(words[1].replace(',','.')) * 1000)
     result["name"]=re.sub(r'_line\..*','',name)
     result["power"]="line"
-  elif "_line." in name and (re.search(r'^квл ',name.lower()) != None or re.search(r'^кл ',name.lower()) != None):
+  elif "_line." in name and (re.search(r'^квл[ -_]',name.lower()) != None or re.search(r'^кл ',name.lower()) != None):
     result={}
     # vl
     words=name.split(' ')
@@ -582,7 +582,7 @@ def parse_file_name(path_name):
     result["name"]=re.sub(r'_line04\..*','',name)
     result["power"]="minor_line"
     # minor_line
-  elif "_station." in name and re.search(r'^пс ',name.lower()) != None:
+  elif "_station." in name and re.search(r'^пс[ -_]',name.lower()) != None:
     # ps
     result={}
     words=name.split(' ')
