@@ -558,32 +558,51 @@ def parse_file_name(path_name):
   name=os.path.basename(path_name).strip().decode('utf8')
   log.debug(u"file name=%s"%name)
 
-  if "_line." in name and re.search(u'^вл ',name.lower()) != None:
-    result={}
-    # vl
-    words=name.split(' ')
-    if words[1].isdigit():
-      result["voltage"]=int(words[1]) * 1000
-    elif re.match("^\d+?\.\d+?$", words[1].replace(',','.')) is not None:
-      result["voltage"]=int(float(words[1].replace(',','.')) * 1000)
-    result["name"]=re.sub(u'_line\..*','',name)
-    result["power"]="line"
-  elif "_line." in name and (re.search(u'^квл ',name.lower()) != None or re.search(u'^кл ',name.lower()) != None):
-    result={}
-    # vl
-    words=name.split(' ')
-    if words[1].isdigit():
-      result["voltage"]=int(words[1]) * 1000
-    result["name"]=re.sub(u'_line\..*','',name)
-    result["power"]="cable"
-  elif "_line04." in name:
+  if \
+      log.info(u"пробуем найти '_line.' в имени файла линии: '%s'"%name) or \
+      "_line." in name:
+    log.info(u"УСПЕХ! нашли '_line.' в имени файла линии: '%s'"%name) 
+    if \
+        log.info(u"пробуем найти в начале имени 'вл ' (с пробелом после 'вл') в имени линии, приведённому к нижнему регистру: '%s'"%name.lower()) or \
+        re.search(u'^вл ',name.lower()) != None:
+      log.info(u"УСПЕХ! нашли 'вл ' (с пробелом после 'вл') в начале имени линии, приведённому к нижнему регистру: '%s'"%name.lower())
+      result={}
+      # vl
+      words=name.split(' ')
+      if words[1].isdigit():
+        result["voltage"]=int(words[1]) * 1000
+      elif re.match("^\d+?\.\d+?$", words[1].replace(',','.')) is not None:
+        result["voltage"]=int(float(words[1].replace(',','.')) * 1000)
+      result["name"]=re.sub(u'_line\..*','',name)
+      result["power"]="line"
+    elif \
+        log.info(u"поробуем найти 'квл ' (с пробелом после 'квл') или 'кл ' (с пробелом после 'кл') в начале имени линии, приведённому к нижнему регистру: '%s'"%name.lower()) or \
+        re.search(u'^квл ',name.lower()) != None or re.search(u'^кл ',name.lower()) != None:
+      log.info(u"УСПЕХ! нашли 'квл ' (с пробелом после 'квл') или 'кл ' (с пробелом после 'кл') в начале имени линии, приведённому к нижнему регистру: '%s'"%name.lower())
+      result={}
+      # vl
+      words=name.split(' ')
+      if words[1].isdigit():
+        result["voltage"]=int(words[1]) * 1000
+      result["name"]=re.sub(u'_line\..*','',name)
+      result["power"]="cable"
+    else:
+      log.error(u"ОШИБКА! имя файла некорректно сформировано! Несмотря на то, что '_line' было найдено в линии - требуется найти корректный префикс ('ВЛ ', 'КЛ ', 'КВЛ ' - с пробелами после префикса!), однако этого найдено не было - выход!") 
+      
+  elif \
+      log.info(u"пробуем найти '_line04.' в имени файла линии: '%s'"%name) or \
+      "_line04." in name:
+    log.info(u"УСПЕХ! нашли '_line04.' в имени файла линии: '%s'"%name) 
     result={}
     result["voltage"]=400
     result["name"]=re.sub(u'_line04\..*','',name)
     result["power"]="minor_line"
     # minor_line
-  elif "_station." in name and re.search(u'^пс ',name.lower()) != None:
+  elif \
+      log.info(u"пробуем найти '_station.' в имени файла: '%s'"%name) or \
+      "_station." in name and re.search(u'^пс ',name.lower()) != None:
     # ps
+    log.info(u"УСПЕХ! нашли '_station.' в имени файла: '%s'"%name) 
     result={}
     words=name.split(' ')
     
@@ -598,11 +617,15 @@ def parse_file_name(path_name):
         return None
     result["name"]=re.sub(u'_station\..*','',name).replace('_','/')
     result["power"]="station"
-  elif "_substation." in name:
+  elif \
+      log.info(u"пробуем найти '_substation.' в имени файла линии: '%s'"%name) or \
+      "_substation." in name:
+    log.info(u"УСПЕХ! нашли '_substation.' в имени файла линии: '%s'"%name) 
     #tp
     result={}
     result["power"]="sub_station"
   else:
+    log.error(u"ОШИБКА! имя файла некорректно сформировано! Требуется перепроверить имя файла, чтобы оно содержало правильное наименование") 
     # error
     log.error("no type of data in name of gpx-file!")
   return result
